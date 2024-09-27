@@ -11,19 +11,50 @@ interface FileWithPreview extends File {
   preview: string;
 }
 
-export default function Component() {
+interface DragAndDropUploaderProps {
+  onUploadSuccess: (data: any) => void;
+}
+
+export function DragAndDropUploader({
+  onUploadSuccess,
+}: DragAndDropUploaderProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles((prevFiles) => [
-      ...prevFiles,
-      ...acceptedFiles.map((file) =>
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const newFiles = acceptedFiles.map((file) =>
         Object.assign(file, {
           preview: URL.createObjectURL(file),
         })
-      ),
-    ]);
-  }, []);
+      );
+
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+
+      newFiles.forEach((file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/api/image', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Success:', data);
+            onUploadSuccess(data); // Pass the response data to the parent component
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      });
+    },
+    [onUploadSuccess]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
