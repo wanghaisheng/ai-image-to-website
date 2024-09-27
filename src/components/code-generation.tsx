@@ -22,6 +22,7 @@ export async function* readStream(response: ReadableStream) {
 
 export function CodeGeneration() {
   const [imageName, setImageName] = useState<string | null>(null);
+  const [generationPending, setGenerationPending] = useState<boolean>(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>('');
 
   const handleUploadSuccess = (data: any) => {
@@ -29,8 +30,9 @@ export function CodeGeneration() {
   };
 
   const handleGenerateCode = () => {
-    setGeneratedCode('');
     if (!imageName) return;
+    setGeneratedCode('');
+    setGenerationPending(true);
 
     fetch('/api/ai', {
       method: 'POST',
@@ -66,13 +68,17 @@ export function CodeGeneration() {
                 }
               }
             });
+
+            setGenerationPending(false);
           } catch (error) {
             console.error('Error parsing chunk:', error);
+            setGenerationPending(false);
           }
         }
       })
       .catch((error) => {
         console.error('Error:', error);
+        setGenerationPending(false);
       });
   };
 
@@ -82,7 +88,7 @@ export function CodeGeneration() {
         <div
           className={`transition-all duration-500 ease-in-out mt-[5vh] lg:mt-[15vh]`}
         >
-          {!generatedCode && (
+          {!generatedCode && !generationPending && (
             <>
               <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
                 Upload a file to generate your website
@@ -94,6 +100,13 @@ export function CodeGeneration() {
                 </Button>
               )}
             </>
+          )}
+          {generationPending && (
+            <div className="mt-4">
+              <p className="text-lg text-gray-900 dark:text-white">
+                Generating code...
+              </p>
+            </div>
           )}
           {generatedCode && (
             <div className="mt-4">

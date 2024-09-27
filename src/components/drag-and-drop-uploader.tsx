@@ -18,10 +18,13 @@ interface DragAndDropUploaderProps {
 export function DragAndDropUploader({
   onUploadSuccess,
 }: DragAndDropUploaderProps) {
+  const [imageUploadPending, setImageUploadPending] = useState<boolean>(false);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      setImageUploadPending(true);
+
       const newFiles = acceptedFiles.map((file) =>
         Object.assign(file, {
           preview: URL.createObjectURL(file),
@@ -46,6 +49,7 @@ export function DragAndDropUploader({
           })
           .then((data) => {
             console.log('Success:', data);
+            setImageUploadPending(false);
             onUploadSuccess(data); // Pass the response data to the parent component
           })
           .catch((error) => {
@@ -105,6 +109,13 @@ export function DragAndDropUploader({
               </Button>
             </div>
           ))}
+        </div>
+      )}
+      {imageUploadPending && (
+        <div className="mt-4">
+          <p className="text-lg text-gray-900 dark:text-white">
+            Uploading image...
+          </p>
         </div>
       )}
     </Card>

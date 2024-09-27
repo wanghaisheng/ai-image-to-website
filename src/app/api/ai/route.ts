@@ -102,7 +102,19 @@ export async function POST(request: Request) {
       }
     );
 
-    return new Response(generatedCode, {
+    const reader = generatedCode.getReader();
+    const stream = new ReadableStream({
+      async start(controller) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          controller.enqueue(value);
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
       headers: { 'content-type': 'text/event-stream' },
     });
   } catch (error) {
